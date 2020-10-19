@@ -278,7 +278,7 @@ public:
     }
 
 #ifdef PRESETS
-    bool OnGossipSelectCode(Player* player, uint32 /*menu_id*/, uint32 gossipListId, const char* code) override
+    bool OnGossipSelectCode(Player* player, uint32 /*menu_id*/, uint32 gossipListId, const char* code)
     {
         uint32 sender = player->PlayerTalkClass->GetGossipOptionSender(gossipListId);
         uint32 action = player->PlayerTalkClass->GetGossipOptionAction(gossipListId);
