@@ -65,11 +65,6 @@ public:
             bool triggered;
         };
 
-        bool GossipHello(Player* player) override
-        {
-            return OnGossipHello(player, me);
-        }
-
         static bool OnGossipHello(Player* player, Creature* creature)
         {
             WorldSession* session = player->GetSession();
