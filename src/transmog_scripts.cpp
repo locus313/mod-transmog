@@ -93,8 +93,15 @@ public:
         SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
         return true;
     }
+    
+    bool OnGossipSelect(Player* player, uint32 /*menu_id*/, uint32 gossipListId) override
+    {
+        uint32 sender = player->PlayerTalkClass->GetGossipOptionSender(gossipListId);
+        uint32 action = player->PlayerTalkClass->GetGossipOptionAction(gossipListId);
+        return OnGossipSelect(player, me, sender, action);
+    }
 
-    bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 action)
+    static bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 action)
     {
         player->PlayerTalkClass->ClearMenus();
         WorldSession* session = player->GetSession();
@@ -267,13 +274,21 @@ public:
                     session->SendNotification(res);
                 // OnGossipSelect(player, creature, EQUIPMENT_SLOT_END, sender);
                 // ShowTransmogItems(player, creature, sender);
-                CloseGossipMenuFor(player); // Wait for SetMoney to get fixed, issue #10053
+                // CloseGossipMenuFor(player); // Wait for SetMoney to get fixed, issue #10053
+                new Timed(player, creature, EQUIPMENT_SLOT_END, sender);
             } break;
         }
         return true;
     }
 
 #ifdef PRESETS
+    bool OnGossipSelectCode(Player* player, uint32 /*menu_id*/, uint32 gossipListId, const char* code) override
+    {
+        uint32 sender = player->PlayerTalkClass->GetGossipOptionSender(gossipListId);
+        uint32 action = player->PlayerTalkClass->GetGossipOptionAction(gossipListId);
+        return GossipSelectCode(player, me, sender, action, code);
+    }
+
     bool OnGossipSelectCode(Player* player, Creature* creature, uint32 sender, uint32 action, const char* code)
     {
         player->PlayerTalkClass->ClearMenus();
@@ -338,12 +353,13 @@ public:
             }
         }
         //OnGossipSelect(player, creature, EQUIPMENT_SLOT_END+4, 0);
-        CloseGossipMenuFor(player); // Wait for SetMoney to get fixed, issue #10053
+        //CloseGossipMenuFor(player); // Wait for SetMoney to get fixed, issue #10053
+        new Timed(player, creature, EQUIPMENT_SLOT_END + 4, 0);
         return true;
     }
 #endif
 
-    void ShowTransmogItems(Player* player, Creature* creature, uint8 slot) // Only checks bags while can use an item from anywhere in inventory
+    static void ShowTransmogItems(Player* player, Creature* creature, uint8 slot) // Only checks bags while can use an item from anywhere in inventory
     {
         WorldSession* session = player->GetSession();
         Item* oldItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
