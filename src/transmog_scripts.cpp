@@ -59,7 +59,7 @@ public:
                 return true;
             }
 
-            //ObjectGuid guid;
+            ObjectGuid guid;
             Player* player;
             uint32 sender;
             uint32 action;
