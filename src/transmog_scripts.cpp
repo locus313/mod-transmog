@@ -22,7 +22,7 @@ Cant transmogrify rediculus items // Foereaper: would be fun to stab people with
 
 #include "Transmogrification.h"
 #include "ScriptedCreature.h"
-#include "ObjectGuid.h"
+#include "ObjectMgr.h"
 #define sT  sTransmogrification
 #define GTS session->GetAcoreString // dropped translation support, no one using?
 
