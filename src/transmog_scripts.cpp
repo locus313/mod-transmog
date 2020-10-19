@@ -28,22 +28,62 @@ class npc_transmogrifier : public CreatureScript
 {
 public:
     npc_transmogrifier() : CreatureScript("npc_transmogrifier") { }
-
-    bool OnGossipHello(Player* player, Creature* creature)
+    
+    class TransmogAI : public ScriptedAI
     {
-        WorldSession* session = player->GetSession();
-        if (sT->GetEnableTransmogInfo())
-            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Book_11:30:30:-18:0|tHow does transmogrification work?", EQUIPMENT_SLOT_END + 9, 0);
-        for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
+    public:
+        TransmogAI(Creature* creature) : ScriptedAI(creature) {}
+
+        struct Timed : public BasicEvent
         {
-            if (const char* slotName = sT->GetSlotName(slot, session))
+            // This timed event tries to fix modify money breaking gossip
+            // This event closes the gossip menu and on the second player update tries to open the next menu
+            Timed(Player* player, Creature* creature, uint32 sender, uint32 action) : guid(creature->GetGUID()), player(player), sender(sender), action(action), triggered(false)
             {
-                Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
-                uint32 entry = newItem ? sT->GetFakeEntry(newItem->GetGUID()) : 0;
-                std::string icon = entry ? sT->GetItemIcon(entry, 30, 30, -18, 0) : sT->GetSlotIcon(slot, 30, 30, -18, 0);
-                AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, icon + std::string(slotName), EQUIPMENT_SLOT_END, slot);
+                CloseGossipMenuFor(player);
+                player->m_Events.AddEvent(this, player->m_Events.CalculateTime(Milliseconds(1)));
             }
+
+            bool Execute(uint64, uint32) override
+            {
+                if (!triggered)
+                {
+                    triggered = true;
+                    player->m_Events.AddEvent(this, player->m_Events.CalculateTime(Milliseconds(1)));
+                    return false;
+                }
+                if (Creature* creature = player->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_GOSSIP))
+                    OnGossipSelect(player, creature, sender, action);
+                return true;
+            }
+
+            ObjectGuid guid;
+            Player* player;
+            uint32 sender;
+            uint32 action;
+            bool triggered;
+        };
+
+        bool OnGossipHello(Player* player) override
+        {
+            return OnGossipHello(player, me);
         }
+
+        static bool OnGossipHello(Player* player, Creature* creature)
+        {
+            WorldSession* session = player->GetSession();
+            if (sT->GetEnableTransmogInfo())
+                AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/INV_Misc_Book_11:30:30:-18:0|tHow does transmogrification work?", EQUIPMENT_SLOT_END + 9, 0);
+            for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
+            {
+                if (const char* slotName = sT->GetSlotName(slot, session))
+                {
+                    Item* newItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+                    uint32 entry = newItem ? sT->GetFakeEntry(newItem->GetGUID()) : 0;
+                    std::string icon = entry ? sT->GetItemIcon(entry, 30, 30, -18, 0) : sT->GetSlotIcon(slot, 30, 30, -18, 0);
+                    AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, icon + std::string(slotName), EQUIPMENT_SLOT_END, slot);
+                }
+            }
 #ifdef PRESETS
         if (sT->GetEnableSets())
             AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/RAIDFRAME/UI-RAIDFRAME-MAINASSIST:30:30:-18:0|tManage sets", EQUIPMENT_SLOT_END + 4, 0);
